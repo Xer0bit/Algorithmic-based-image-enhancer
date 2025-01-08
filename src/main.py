@@ -3,6 +3,8 @@ from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 import uvicorn
 import logging
+from pathlib import Path
+import shutil
 from processors.image_processor import ImageProcessor, UPLOAD_DIR, PROCESSED_DIR
 
 # Setup logging
@@ -91,16 +93,15 @@ async def get_upload_page():
 async def enhance_image(file: UploadFile = File(...), factor: float = 1.3):
     try:
         # Ensure filename is safe
-        safe_filename = Path(file.filename).name
+        safe_filename = file.filename.replace(" ", "_")
         file_path = UPLOAD_DIR / safe_filename
         
         logger.debug(f"Saving uploaded file to {file_path}")
         
-        # Save uploaded file
+        # Save uploaded file using shutil
         try:
             with file_path.open("wb") as buffer:
-                content = await file.read()
-                buffer.write(content)
+                shutil.copyfileobj(file.file, buffer)
         except Exception as e:
             logger.error(f"Failed to save uploaded file: {e}")
             raise HTTPException(status_code=400, detail="Failed to save uploaded file")
